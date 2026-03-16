@@ -126,7 +126,8 @@ async def whop_webhook(request: Request):
     plan = membership.get("plan", {}).get("name", "monthly")
     c = db()
 
-    if event in ("membership.went_valid", "membership.created", "payment.succeeded"):
+    if event in ("membership.went_valid", "membership.created", "payment.succeeded",
+                 "membership_activated", "payment_succeeded"):
         existing = c.execute("SELECT * FROM licenses WHERE whop_membership_id=?", (membership_id,)).fetchone()
         if existing:
             if existing["status"] == "revoked":
@@ -145,7 +146,8 @@ async def whop_webhook(request: Request):
         c.close()
         return {"ok": True, "key": key, "email": email}
 
-    elif event in ("membership.went_invalid", "membership.expired", "membership.cancelled"):
+    elif event in ("membership.went_invalid", "membership.expired", "membership.cancelled",
+                   "membership_deactivated", "payment_failed"):
         c.execute("UPDATE licenses SET status='revoked' WHERE whop_membership_id=?", (membership_id,))
         c.commit()
         c.close()
