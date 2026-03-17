@@ -174,13 +174,60 @@ def activate(req: ActivateReq, request: Request):
 @app.post("/webhook/whop")
 async def whop_webhook(request: Request):
     body = await request.body()
-    sig = request.headers.get("x-whop-signature", "")
-    print(f"Webhook received - sig: {sig[:30] if sig else 'none'}")
     try:
         data = json.loads(body)
     except:
         raise HTTPException(400, "Invalid JSON")
-    print(f"Webhook FULL body: {json.dumps(data)[:500]}")
+
+    # Whop V1 format — event is derived from data fields
+    inner = data.get("data", {})
+    membership_id = inner.get("id", "")
+    email = inner.get("user", {}).get("email", "") or inner.get("email", "")
+    status = inner.get("status", "")
+    substatus = inner.get("substatus", "")
+    plan = inner.get("plan", {})
+    if isinstance(plan, dict):
+        plan_name = plan.get("name", "monthly")
+    else:
+        plan_name = "monthly"
+
+    print(f"Webhook: id={membership_id} status={status} substatus={substatus} email={email}")
+
+    c = db()
+
+    # Active membership events
+    if status in ("trialing", "active") or substatus == "succeeded":
+        existing = c.execute("SELECT * FROM licenses WHERE whop_membership_id=?", (membership_id,)).fetchone()
+        if existing:
+            if existing["status"] == "revoked":
+                c.execute("UPDATE licenses SET status='active', expires_at=? WHERE whop_membership_id=?",
+                    ((datetime.utcnow() + timedelta(days=32)).isoformat(), membership_id))
+                c.commit()
+            key = existing["key"]
+            c.close()
+            return {"ok": True, "key": key, "action": "existing"}
+        else:
+            key = gen_key()
+            c.execute("""INSERT INTO licenses (key, email, status, plan, whop_membership_id, created_at, expires_at)
+                VALUES (?,?,?,?,?,?,?)""",
+                (key, email, "active", plan_name, membership_id,
+                 datetime.utcnow().isoformat(),
+                 (datetime.utcnow() + timedelta(days=32)).isoformat()))
+            c.commit()
+            c.close()
+            print(f"Generated key {key} for {email}")
+            send_license_email(email, key, plan_name)
+            return {"ok": True, "key": key, "email": email}
+
+    # Cancelled/expired events
+    elif status in ("expired", "canceled", "cancelled", "banned"):
+        c.execute("UPDATE licenses SET status='revoked' WHERE whop_membership_id=?", (membership_id,))
+        c.commit()
+        c.close()
+        return {"ok": True, "action": "revoked"}
+
+    c.close()
+    return {"ok": True, "status": status, "action": "ignored"}
 
     event = data.get("event", "")
     membership = data.get("data", {})
