@@ -174,15 +174,13 @@ def activate(req: ActivateReq, request: Request):
 @app.post("/webhook/whop")
 async def whop_webhook(request: Request):
     body = await request.body()
-    # Log headers for debugging
     sig = request.headers.get("x-whop-signature", "")
     print(f"Webhook received - sig: {sig[:30] if sig else 'none'}")
-    # Skip signature verification for now
     try:
         data = json.loads(body)
     except:
         raise HTTPException(400, "Invalid JSON")
-    print(f"Webhook event: {data.get('event', 'unknown')}")
+    print(f"Webhook FULL body: {json.dumps(data)[:500]}")
 
     event = data.get("event", "")
     membership = data.get("data", {})
