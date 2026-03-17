@@ -58,87 +58,62 @@ def admin_check(pwd):
 
 def send_license_email(email, key, plan):
     if not RESEND_API_KEY or not email:
+        print(f"Email skipped: API key empty={not RESEND_API_KEY} email empty={not email}")
         return
     try:
-        html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
+        import requests as req_lib
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
 <style>
-  body {{ font-family: Arial, sans-serif; background: #0f0f0f; color: #f0f0f0; margin: 0; padding: 0; }}
-  .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
-  .header {{ background: #1a1a1a; border-top: 3px solid #d4a017; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-  .logo {{ color: #d4a017; font-size: 28px; font-weight: bold; letter-spacing: 2px; }}
-  .body {{ background: #1a1a1a; padding: 30px; border-radius: 0 0 8px 8px; }}
-  .key-box {{ background: #0f0f0f; border: 2px solid #d4a017; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }}
-  .key {{ color: #d4a017; font-size: 22px; font-weight: bold; letter-spacing: 3px; font-family: monospace; }}
-  .btn {{ display: inline-block; background: #d4a017; color: #000; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 16px; margin: 20px 0; }}
-  .step {{ background: #222; border-radius: 6px; padding: 12px 16px; margin: 8px 0; }}
-  .step-num {{ color: #d4a017; font-weight: bold; margin-right: 8px; }}
-  .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 30px; }}
-  h2 {{ color: #d4a017; }}
-  p {{ color: #b0b0b0; line-height: 1.6; }}
-</style>
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <div class="logo">◆ FXBD COPIER</div>
-    <p style="color:#888; margin:8px 0 0 0;">Telegram to MT4 Signal Copier</p>
-  </div>
-  <div class="body">
-    <h2>Welcome! Your license is ready.</h2>
-    <p>Thank you for subscribing to FXBD Copier. Here is your license key:</p>
-    
-    <div class="key-box">
-      <div class="key">{key}</div>
-      <p style="color:#888; font-size:12px; margin:8px 0 0 0;">Keep this key safe. It is tied to your machine.</p>
-    </div>
-
-    <h2>How to get started</h2>
-    <div class="step"><span class="step-num">1</span>Download the files from your Whop member area</div>
-    <div class="step"><span class="step-num">2</span>Run FXBDCopier.exe on your Windows PC or VPS</div>
-    <div class="step"><span class="step-num">3</span>Enter your license key above when prompted</div>
-    <div class="step"><span class="step-num">4</span>Connect your Telegram account</div>
-    <div class="step"><span class="step-num">5</span>Install TGCopier.ex4 in MT4 and start copying signals</div>
-
-    <div style="text-align:center">
-      <a href="{WHOP_URL}" class="btn">Access Your Downloads</a>
-    </div>
-
-    <p>Need help? Read the member guide included in your downloads or reply to this email.</p>
-    
-    <p style="color:#666; font-size:13px;">Plan: {plan} | Subscription managed via Whop</p>
-  </div>
-  <div class="footer">
-    <p>FXBD Copier &bull; Automated Trading Software<br>
-    You received this email because you purchased FXBD Copier.</p>
-  </div>
+body{{font-family:Arial,sans-serif;background:#0f0f0f;color:#f0f0f0;margin:0;padding:0}}
+.container{{max-width:600px;margin:0 auto;padding:40px 20px}}
+.header{{background:#1a1a1a;border-top:3px solid #d4a017;padding:30px;text-align:center;border-radius:8px 8px 0 0}}
+.logo{{color:#d4a017;font-size:28px;font-weight:bold;letter-spacing:2px}}
+.body{{background:#1a1a1a;padding:30px;border-radius:0 0 8px 8px}}
+.key-box{{background:#0f0f0f;border:2px solid #d4a017;border-radius:8px;padding:20px;text-align:center;margin:20px 0}}
+.key{{color:#d4a017;font-size:22px;font-weight:bold;letter-spacing:3px;font-family:monospace}}
+.btn{{display:inline-block;background:#d4a017;color:#000;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px;margin:20px 0}}
+.step{{background:#222;border-radius:6px;padding:12px 16px;margin:8px 0}}
+h2{{color:#d4a017}}
+p{{color:#b0b0b0;line-height:1.6}}
+</style></head>
+<body><div class="container">
+<div class="header"><div class="logo">FXBD COPIER</div>
+<p style="color:#888;margin:8px 0 0 0">Telegram to MT4 Signal Copier</p></div>
+<div class="body">
+<h2>Welcome! Your license is ready.</h2>
+<p>Thank you for subscribing to FXBD Copier. Here is your license key:</p>
+<div class="key-box"><div class="key">{key}</div>
+<p style="color:#888;font-size:12px;margin:8px 0 0 0">Keep this key safe. It is tied to your machine.</p></div>
+<h2>How to get started</h2>
+<div class="step"><b>1</b> Download files from your Whop member area</div>
+<div class="step"><b>2</b> Run FXBDCopier.exe on your Windows PC or VPS</div>
+<div class="step"><b>3</b> Enter your license key above when prompted</div>
+<div class="step"><b>4</b> Connect your Telegram account</div>
+<div class="step"><b>5</b> Install TGCopier.ex4 in MT4 and start the bot</div>
+<div style="text-align:center"><a href="{WHOP_URL}" class="btn">Access Your Downloads</a></div>
+<p>Need help? Reply to this email or contact support on Whop.</p>
+<p style="color:#666;font-size:13px">Plan: {plan} | Managed via Whop</p>
 </div>
-</body>
-</html>
-"""
-        payload = json.dumps({
-            "from": f"FXBD Copier <{FROM_EMAIL}>",
-            "to": [email],
-            "subject": "Your FXBD Copier License Key",
-            "html": html
-        }).encode()
+<div style="text-align:center;color:#666;font-size:12px;margin-top:30px">
+<p>FXBD Copier - Automated Trading Software</p></div>
+</div></body></html>"""
 
-        req = urllib.request.Request(
+        response = req_lib.post(
             "https://api.resend.com/emails",
-            data=payload,
             headers={
                 "Authorization": f"Bearer {RESEND_API_KEY}",
                 "Content-Type": "application/json"
-            }
+            },
+            json={
+                "from": f"FXBD Copier <{FROM_EMAIL}>",
+                "to": [email],
+                "subject": "Your FXBD Copier License Key",
+                "html": html
+            },
+            timeout=15
         )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            print(f"Email sent to {email}: {r.status}")
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode()
-        print(f"Email failed: {e.code} {e.reason} - {error_body}")
+        print(f"Email response: {response.status_code} {response.text}")
     except Exception as e:
         print(f"Email exception: {e}")
 
