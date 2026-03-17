@@ -136,8 +136,11 @@ def send_license_email(email, key, plan):
         )
         with urllib.request.urlopen(req, timeout=10) as r:
             print(f"Email sent to {email}: {r.status}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        print(f"Email failed: {e.code} {e.reason} - {error_body}")
     except Exception as e:
-        print(f"Email failed: {e}")
+        print(f"Email exception: {e}")
 
 class ActivateReq(BaseModel):
     key: str
